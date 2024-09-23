@@ -44,11 +44,11 @@ class UserController extends Controller
     {
         $currentDate = Carbon::now();
         if (!empty($minAge)) {
-            $minBirthDate = $currentDate->copy()->subYears($minAge)->startOfYear();
+            $minBirthDate = $currentDate->copy()->subYears($minAge)->endOfYear();
             $query->where('birth_day', '<=', $minBirthDate);
         }
         if (!empty($maxAge)) {
-            $maxBirthDate = $currentDate->copy()->subYears($maxAge)->endOfYear();
+            $maxBirthDate = $currentDate->copy()->subYears($maxAge)->startOfYear();
             $query->where('birth_day', '>=', $maxBirthDate);
         }
     }
