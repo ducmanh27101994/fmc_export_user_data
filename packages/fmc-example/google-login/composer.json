@@ -1,0 +1,12 @@
+{
+    "name": "fmc-example/google-login",
+    "description": "Google Login API",
+    "autoload": {
+        "psr-4": {
+            "FmcExample\\GoogleLogin\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=7.3"
+    }
+}
