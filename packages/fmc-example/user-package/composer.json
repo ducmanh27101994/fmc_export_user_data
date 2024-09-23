@@ -1,0 +1,13 @@
+{
+    "name": "fmc-example/user-package",
+    "description": "Export data in user table by condition",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "FmcExample\\UserPackage\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=7.3"
+    }
+}
