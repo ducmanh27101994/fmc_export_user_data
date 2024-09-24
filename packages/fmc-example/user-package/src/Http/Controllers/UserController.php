@@ -53,8 +53,7 @@ class UserController extends Controller
         $totalChunks = ceil($query->count() / $numberChuck);
         $query->chunk($numberChuck, function ($users) use (&$currentChunk, $totalChunks, $email) {
             $currentChunk++;
-            $job = new ExportUserDataJob($users, $email);
-            dispatch($job);
+            ExportUserDataJob::dispatch($users, $email);
             if ($currentChunk == $totalChunks) {
                 SendEmailWithAttachmentsJob::dispatch($email)
                     ->delay(now()->addMinutes(2));
