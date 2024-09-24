@@ -4,6 +4,7 @@ namespace FmcExample\UserPackage;
 
 use Illuminate\Support\ServiceProvider;
 
+
 class UserPackageServiceProvider extends ServiceProvider
 {
     /**
@@ -23,9 +24,11 @@ class UserPackageServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+
         $this->loadRoutesFrom(__DIR__.'/routes/api.php');
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
         $this->loadSeedsFrom(__DIR__ . '/../database/seeders');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'userpackage');
     }
 
     protected function loadSeedsFrom($path)
