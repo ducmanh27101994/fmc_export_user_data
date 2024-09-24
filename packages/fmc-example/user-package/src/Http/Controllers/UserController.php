@@ -6,22 +6,32 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Carbon\Carbon;
+use FmcExample\UserPackage\Jobs\ExportUserDataJob;
+use FmcExample\UserPackage\Jobs\SendEmailWithAttachmentsJob;
+
 
 class UserController extends Controller
 {
     public function exportDataUsers(Request $request)
     {
-        $filters = $request->only(['kyc', 'country', 'min_age', 'max_age', 'start_date', 'end_date']);
-        $userList = $this->getFilteredUsers($filters);
+        $email = $request->input('email');
+        if (!empty($email)) {
+            $filters = $request->only(['kyc', 'country', 'min_age', 'max_age', 'start_date', 'end_date']);
+            $this->getFilteredUsers($filters, $email);
 
-        return response()->json([
-            'message' => 'Success',
-            'status' => 200,
-            'data' => $userList
-        ]);
+            return response()->json([
+                'message' => 'Success',
+                'status' => 200,
+            ]);
+        } else {
+            return response()->json([
+                'message' => 'Nhập Email người nhận thông tin',
+                'status' => 400,
+            ]);
+        }
     }
 
-    private function getFilteredUsers(array $filters)
+    private function getFilteredUsers(array $filters, $email)
     {
         $query = User::query();
         if ($filters['kyc'] !== null) {
@@ -37,7 +47,19 @@ class UserController extends Controller
             $this->filterByRegistrationDate($query, $filters['start_date'], $filters['end_date']);
         }
 
-        return $query->get()->map([$this, 'formatUserData']);
+
+        $numberChuck = 50000;
+        $currentChunk = 0;
+        $totalChunks = ceil($query->count() / $numberChuck);
+        $query->chunk($numberChuck, function ($users) use (&$currentChunk, $totalChunks, $email) {
+            $currentChunk++;
+            $job = new ExportUserDataJob($users, $email);
+            dispatch($job);
+            if ($currentChunk == $totalChunks) {
+                SendEmailWithAttachmentsJob::dispatch($email)
+                    ->delay(now()->addMinutes(2));
+            }
+        });
     }
 
     private function filterByAgeRange($query, $minAge, $maxAge)
@@ -60,18 +82,5 @@ class UserController extends Controller
             Carbon::parse($endDate)->endOfDay(),
         ]);
     }
-
-    public function formatUserData($user)
-    {
-        return [
-            'userName' => $user->name ?? '',
-            'email' => $user->email ?? '',
-            'Ngày đăng ký' => $user->created_at->format('Y-m-d H:i:s') ?? '',
-            'KYC' => $user->is_verified ? 'Đã KYC' : 'Chưa KYC',
-            'Quốc gia' => $user->country ?? '',
-            'Ngày sinh' => $user->birth_day ?? '',
-        ];
-    }
-
 
 }
