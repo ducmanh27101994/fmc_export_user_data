@@ -28,6 +28,14 @@ class UserController extends Controller
         }
 
         $filters = $request->only(['kyc', 'country', 'min_age', 'max_age', 'start_date', 'end_date']);
+
+        if (count(array_filter($filters)) == 0) {
+            return response()->json([
+                'message' => 'Bạn phải cung cấp ít nhất một điều kiện để xuất dữ liệu',
+                'status' => 400,
+            ]);
+        }
+
         $validateEmail = $this->getFilteredUsers($filters, $email);
 
         if (!$validateEmail) {
