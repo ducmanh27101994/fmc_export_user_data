@@ -8,6 +8,11 @@ use App\Models\User;
 use Carbon\Carbon;
 use FmcExample\UserPackage\Jobs\ExportUserDataJob;
 use FmcExample\UserPackage\Jobs\SendEmailWithAttachmentsJob;
+use Illuminate\Bus\Batch;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
+use Throwable;
+
 
 
 class UserController extends Controller
@@ -47,18 +52,19 @@ class UserController extends Controller
             $this->filterByRegistrationDate($query, $filters['start_date'], $filters['end_date']);
         }
 
-
-        $numberChuck = 50000;
-        $currentChunk = 0;
-        $totalChunks = ceil($query->count() / $numberChuck);
-        $query->chunk($numberChuck, function ($users) use (&$currentChunk, $totalChunks, $email) {
-            $currentChunk++;
-            ExportUserDataJob::dispatch($users, $email);
-            if ($currentChunk == $totalChunks) {
-                SendEmailWithAttachmentsJob::dispatch($email)
-                    ->delay(now()->addMinutes(2));
-            }
+        $batchJobs = [];
+        $numberChuck = 50000; // Số lượng bản ghi trên mỗi file excel
+        $query->chunk($numberChuck, function ($users) use (&$batchJobs, $email) {
+            $batchJobs[] = new ExportUserDataJob($users, $email);
         });
+
+        Bus::batch($batchJobs)->then(function (Batch $batch) use ($email) {
+            SendEmailWithAttachmentsJob::dispatch($email);
+        })->catch(function (Batch $batch, Throwable $e) {
+            Log::error("Có lỗi xảy ra trong quá trình xuất dữ liệu: " . $e->getMessage());
+        })->finally(function (Batch $batch) {
+            Log::info("Quá trình xử lý batch đã kết thúc.");
+        })->dispatch();
     }
 
     private function filterByAgeRange($query, $minAge, $maxAge)

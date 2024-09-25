@@ -11,11 +11,12 @@ use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\File;
+use Illuminate\Bus\Batchable;
 
 
 class ExportUserDataJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels, Dispatchable;
+    use InteractsWithQueue, Queueable, SerializesModels, Dispatchable, Batchable;
 
     protected $users;
     protected $email;

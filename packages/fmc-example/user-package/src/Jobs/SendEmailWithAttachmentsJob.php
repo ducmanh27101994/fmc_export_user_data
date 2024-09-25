@@ -26,7 +26,6 @@ class SendEmailWithAttachmentsJob implements ShouldQueue
 
     public function handle()
     {
-
         try {
             Mail::send('userpackage::emails.user_data', [], function ($message) {
                 $message->to($this->email)
