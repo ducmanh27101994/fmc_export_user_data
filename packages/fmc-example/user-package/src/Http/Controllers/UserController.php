@@ -29,9 +29,11 @@ class UserController extends Controller
 
         $filters = $request->only(['kyc', 'country', 'min_age', 'max_age', 'start_date', 'end_date']);
 
-        if (count(array_filter($filters)) == 0) {
+        //Validate phải có ít nhất 2 điều kiện
+        $validationResult = $this->validateFilters($filters);
+        if (!$validationResult) {
             return response()->json([
-                'message' => 'Bạn phải cung cấp ít nhất một điều kiện để xuất dữ liệu',
+                'message' => 'Bạn phải cung cấp ít nhất hai điều kiện để xuất dữ liệu',
                 'status' => 400,
             ]);
         }
@@ -107,6 +109,20 @@ class UserController extends Controller
             Carbon::parse($startDate)->startOfDay(),
             Carbon::parse($endDate)->endOfDay(),
         ]);
+    }
+
+    private function validateFilters(array $filters)
+    {
+        $validAgeCondition = !empty($filters['min_age']) || !empty($filters['max_age']);
+        $validDateCondition = !empty($filters['start_date']) || !empty($filters['end_date']);
+        $nonEmptyCount = count(array_filter($filters));
+
+        if (($validAgeCondition && !$validDateCondition) || (!$validAgeCondition && $validDateCondition)) {
+            if ($nonEmptyCount < 3) return false;
+        } else {
+            if ($nonEmptyCount < 2) return false;
+        }
+        return true;
     }
 
 }
