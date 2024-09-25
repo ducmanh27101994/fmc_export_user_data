@@ -19,7 +19,8 @@ class SendEmailWithAttachmentsJob implements ShouldQueue
     protected $email;
     protected $directoryPath;
     public $tries = 5;
-    public $timeout = 300;
+
+    public $timeout = 3600;
 
     public function __construct($email)
     {
