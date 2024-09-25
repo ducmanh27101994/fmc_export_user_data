@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,8 @@ class SendEmailWithAttachmentsJob implements ShouldQueue
 
     protected $email;
     protected $directoryPath;
+    public $tries = 5;
+    public $timeout = 300;
 
     public function __construct($email)
     {
@@ -47,6 +50,8 @@ class SendEmailWithAttachmentsJob implements ShouldQueue
             });
 
             File::deleteDirectory($this->directoryPath);
+            Cache::forget('processing_email_' . $this->email);
+
         } catch (\Exception $e) {
             Log::info('Lỗi khi gửi email: ' . $e->getMessage());
         }

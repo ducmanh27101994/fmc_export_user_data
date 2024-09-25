@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
         $faker = Faker::create();
         $countries = ['VIETNAM', 'USA', 'CANADA', 'AUSTRALIA', 'JAPAN'];
         $batchSize = 500;
-        $totalRecords = 500000;
+        $totalRecords = 2000000;
 
         for ($i = 0; $i < $totalRecords / $batchSize; $i++) {
             $users = [];
