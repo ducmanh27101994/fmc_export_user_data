@@ -10,9 +10,9 @@ use FmcExample\UserPackage\Jobs\ExportUserDataJob;
 use FmcExample\UserPackage\Jobs\SendEmailWithAttachmentsJob;
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
-
 
 
 class UserController extends Controller
@@ -20,18 +20,25 @@ class UserController extends Controller
     public function exportDataUsers(Request $request)
     {
         $email = $request->input('email');
-        if (!empty($email)) {
-            $filters = $request->only(['kyc', 'country', 'min_age', 'max_age', 'start_date', 'end_date']);
-            $this->getFilteredUsers($filters, $email);
-
-            return response()->json([
-                'message' => 'Success',
-                'status' => 200,
-            ]);
-        } else {
+        if (empty($email)) {
             return response()->json([
                 'message' => 'Nhập Email người nhận thông tin',
                 'status' => 400,
+            ]);
+        }
+
+        $filters = $request->only(['kyc', 'country', 'min_age', 'max_age', 'start_date', 'end_date']);
+        $validateEmail = $this->getFilteredUsers($filters, $email);
+
+        if (!$validateEmail) {
+            return response()->json([
+                'message' => 'Dữ liệu đang xử lý. Hãy gửi lại yêu cầu khi email gửi hoàn thành',
+                'status' => 400,
+            ]);
+        } else {
+            return response()->json([
+                'message' => 'Success',
+                'status' => 200,
             ]);
         }
     }
@@ -52,6 +59,9 @@ class UserController extends Controller
             $this->filterByRegistrationDate($query, $filters['start_date'], $filters['end_date']);
         }
 
+        if (Cache::has('processing_email_' . $email)) {
+            return false;
+        }
         $batchJobs = [];
         $numberChuck = 50000; // Số lượng bản ghi trên mỗi file excel
         $query->chunk($numberChuck, function ($users) use (&$batchJobs, $email) {
@@ -62,9 +72,12 @@ class UserController extends Controller
             SendEmailWithAttachmentsJob::dispatch($email);
         })->catch(function (Batch $batch, Throwable $e) {
             Log::error("Có lỗi xảy ra trong quá trình xuất dữ liệu: " . $e->getMessage());
-        })->finally(function (Batch $batch) {
+        })->finally(function (Batch $batch, $email) {
             Log::info("Quá trình xử lý batch đã kết thúc.");
         })->dispatch();
+
+        Cache::put('processing_email_' . $email, true, now()->addHours(24));
+        return true;
     }
 
     private function filterByAgeRange($query, $minAge, $maxAge)

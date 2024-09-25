@@ -48,7 +48,5 @@ class GoogleLoginController extends Controller
                 'status' => 400,
             ]);
         }
-
-
     }
 }
